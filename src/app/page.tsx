@@ -1,101 +1,119 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const router = useRouter();
+  const [departements, setDepartements] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  useEffect(() => {
+    // 1. Check if the user has a token. If not, kick them back to login!
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    // 2. Fetch the locked data using the token
+    const fetchDepartements = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/departements", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`, // Presenting the ID Card to the Bouncer!
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Session expirée ou accès refusé.");
+        }
+
+        const data = await res.json();
+        setDepartements(data);
+      } catch (err: any) {
+        setError(err.message);
+        // If the token is invalid/expired, clear it and redirect
+        localStorage.removeItem("token");
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDepartements();
+  }, [router]);
+
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
+
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50">Chargement...</div>;
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 p-8">
+      <div className="mx-auto max-w-4xl">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Tableau de Bord RH</h1>
+            <p className="text-slate-500">Bienvenue sur le portail Somepharm</p>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Tableau de Bord RH</h1>
+            <p className="text-slate-500">Bienvenue sur le portail Somepharm</p>
+            <button 
+              onClick={() => router.push("/demandes")}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + Nouvelle Demande
+            </button>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            Déconnexion
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {error && <div className="mb-4 text-red-500">{error}</div>}
+
+        {/* Departments List */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-6 border-b border-slate-100">
+            <h2 className="text-lg font-semibold text-slate-800">Départements de l'entreprise</h2>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {departements.length === 0 ? (
+              <p className="p-6 text-slate-500 text-center">Aucun département trouvé.</p>
+            ) : (
+              departements.map((dept) => (
+                <div key={dept.idDept} className="p-6 hover:bg-slate-50 transition-colors">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium text-slate-800">{dept.nomDept}</h3>
+                    <span className="text-sm px-3 py-1 bg-blue-50 text-blue-700 rounded-full">
+                      ID: {dept.idDept}
+                    </span>
+                  </div>
+                  {dept.managerEmail && (
+                    <p className="text-sm text-slate-500 mt-1">Manager: {dept.managerEmail}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+      </div>
+    </main>
   );
 }
