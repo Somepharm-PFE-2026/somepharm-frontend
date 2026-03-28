@@ -9,11 +9,34 @@ export default function Home() {
   const [demandes, setDemandes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  
+  // NEW: State to hold the user's role
+  const [userRole, setUserRole] = useState<string>("EMPLOYEE"); 
 
-  // Wrapped in useCallback so we can call it after updating a status
   const fetchData = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
+
+    // --- NEW: DECODE THE JWT TO FIND THE ROLE ---
+    try {
+      // Get the middle part of the token (the payload)
+      const payloadBase64 = token.split('.')[1];
+      // Decode the Base64 string into a JSON object
+      const decodedPayload = JSON.parse(atob(payloadBase64));
+      
+      // Look for the role. Spring Security usually puts it in 'role', 'roles', or 'authorities'
+      const roleData = decodedPayload.role || decodedPayload.authorities || "";
+      
+      // Check if the word MANAGER exists anywhere in that claim
+      if (JSON.stringify(roleData).includes("MANAGER")) {
+        setUserRole("MANAGER");
+      } else {
+        setUserRole("EMPLOYEE");
+      }
+    } catch (e) {
+      console.error("Erreur de décodage du token", e);
+    }
+    // --------------------------------------------
 
     try {
       const deptRes = await fetch("http://localhost:8080/api/departements", {
@@ -43,20 +66,15 @@ export default function Home() {
     }
   }, [router, fetchData]);
 
-  // NEW: The function that handles the Approval/Rejection!
   const handleUpdateStatus = async (id: number, newStatus: string) => {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`http://localhost:8080/api/demandes/${id}/statut?statut=${newStatus}`, {
         method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
+        headers: { "Authorization": `Bearer ${token}` },
       });
 
       if (!res.ok) throw new Error("Erreur lors de la mise à jour.");
-      
-      // Refresh the table to show the new status!
       fetchData(); 
     } catch (err: any) {
       alert(err.message);
@@ -99,10 +117,16 @@ export default function Home() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          {/* Main Content Area: Leave Requests */}
+          {/* Main Content Area */}
           <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h2 className="text-lg font-bold text-slate-800">Gestion des Congés</h2>
+              
+              {/* Optional: Show a badge so the user knows what role they are logged in as */}
+              <span className="text-xs font-bold px-3 py-1 bg-slate-200 text-slate-600 rounded-full">
+                Rôle: {userRole}
+              </span>
+
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -112,12 +136,16 @@ export default function Home() {
                     <th className="p-4 font-semibold">Début</th>
                     <th className="p-4 font-semibold">Fin</th>
                     <th className="p-4 font-semibold">Statut</th>
-                    <th className="p-4 font-semibold text-right">Actions (Manager)</th>
+                    
+                    {/* ONLY render the Actions header if the user is a MANAGER */}
+                    {userRole === "MANAGER" && (
+                      <th className="p-4 font-semibold text-right">Actions (Manager)</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {demandes.length === 0 ? (
-                    <tr><td colSpan={5} className="p-6 text-center text-slate-500">Aucune demande trouvée.</td></tr>
+                    <tr><td colSpan={userRole === "MANAGER" ? 5 : 4} className="p-6 text-center text-slate-500">Aucune demande trouvée.</td></tr>
                   ) : (
                     demandes.map((demande, index) => (
                       <tr key={index} className="hover:bg-slate-50 transition-colors">
@@ -125,27 +153,30 @@ export default function Home() {
                         <td className="p-4 text-slate-600">{demande.dateDebut}</td>
                         <td className="p-4 text-slate-600">{demande.dateFin}</td>
                         <td className="p-4">{getStatusBadge(demande.statutCycleVie)}</td>
-                        <td className="p-4 text-right">
-                          {/* ONLY show buttons if the status is EN_ATTENTE */}
-                          {demande.statutCycleVie === 'EN_ATTENTE' ? (
-                            <div className="flex justify-end gap-2">
-                              <button 
-                                onClick={() => handleUpdateStatus(demande.idRequete, 'APPROUVE')}
-                                className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition-colors shadow-sm"
-                              >
-                                ✓ Approuver
-                              </button>
-                              <button 
-                                onClick={() => handleUpdateStatus(demande.idRequete, 'REFUSE')}
-                                className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600 transition-colors shadow-sm"
-                              >
-                                ✕ Refuser
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-slate-400 italic">Traitée</span>
-                          )}
-                        </td>
+                        
+                        {/* ONLY render the action buttons if the user is a MANAGER */}
+                        {userRole === "MANAGER" && (
+                          <td className="p-4 text-right">
+                            {demande.statutCycleVie === 'EN_ATTENTE' ? (
+                              <div className="flex justify-end gap-2">
+                                <button 
+                                  onClick={() => handleUpdateStatus(demande.idRequete, 'APPROUVE')}
+                                  className="px-3 py-1.5 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition-colors shadow-sm"
+                                >
+                                  ✓ Approuver
+                                </button>
+                                <button 
+                                  onClick={() => handleUpdateStatus(demande.idRequete, 'REFUSE')}
+                                  className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600 transition-colors shadow-sm"
+                                >
+                                  ✕ Refuser
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400 italic">Traitée</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
