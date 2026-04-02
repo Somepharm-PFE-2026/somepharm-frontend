@@ -1,156 +1,68 @@
 "use client";
+import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
+import DemandeModal from "./DemandeModal";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+export default function DemandesPage() {
+  const [user, setUser] = useState<any>(null);
+  const [requests, setRequests] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [token, setToken] = useState("");
 
-export default function DemandeCongePage() {
-  const router = useRouter();
-  
-  // Form State
-  const [dateDebut, setDateDebut] = useState("");
-  const [dateFin, setDateFin] = useState("");
-  const [typeConge, setTypeConge] = useState("ANNUEL");
-  const [motif, setMotif] = useState("");
-  
-  // UI State
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-
-  // Security Check: Kick out unauthenticated users
-  useEffect(() => {
-    if (!localStorage.getItem("token")) {
-      router.push("/login");
-    }
-  }, [router]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess(false);
-
-    const token = localStorage.getItem("token");
-
-    try {
-      // Send the request to your Spring Boot Backend
-      const res = await fetch("http://localhost:8080/api/demandes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // The VIP Pass!
-        },
-        body: JSON.stringify({
-          dateDebut,
-          dateFin,
-          typeConge,
-          motif
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Erreur lors de la soumission de la demande.");
-      }
-
-      setSuccess(true);
-      // Reset form
-      setDateDebut("");
-      setDateFin("");
-      setMotif("");
-      
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const fetchData = async (t: string, role: string) => {
+    const endpoint = role === "MANAGER" ? "/api/demandes/all" : "/api/demandes/me";
+    const res = await fetch(`http://localhost:8080${endpoint}`, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    if (res.ok) setRequests(await res.json());
   };
 
+  useEffect(() => {
+    const t = localStorage.getItem("token");
+    if (t) {
+      setToken(t);
+      const decoded: any = jwtDecode(t);
+      setUser(decoded);
+      fetchData(t, decoded.role);
+    }
+  }, []);
+
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
-      <div className="mx-auto max-w-2xl">
-        
-        {/* Header with Back Button */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Nouvelle Demande de Congé</h1>
-            <p className="text-slate-500">Remplissez le formulaire ci-dessous</p>
-          </div>
-          <button 
-            onClick={() => router.push("/")}
-            className="px-4 py-2 bg-white text-slate-600 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-          >
-            Retour au Tableau de Bord
-          </button>
-        </div>
-
-        {/* The Form Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8">
-          
-          {error && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg border border-red-100">{error}</div>}
-          {success && <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg border border-green-100">Votre demande a été soumise avec succès !</div>}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Date de début</label>
-                <input
-                  type="date"
-                  required
-                  value={dateDebut}
-                  onChange={(e) => setDateDebut(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-3 text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Date de fin</label>
-                <input
-                  type="date"
-                  required
-                  value={dateFin}
-                  onChange={(e) => setDateFin(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-3 text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Type de congé</label>
-              <select
-                value={typeConge}
-                onChange={(e) => setTypeConge(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-3 text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
-              >
-                <option value="ANNUEL">Congé Annuel</option>
-                <option value="MALADIE">Congé Maladie</option>
-                <option value="MATERNITE">Congé Maternité/Paternité</option>
-                <option value="SANS_SOLDE">Congé Sans Solde</option>
-                <option value="RECUPERATION">Récupération</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Motif (Optionnel)</label>
-              <textarea
-                rows={4}
-                value={motif}
-                onChange={(e) => setMotif(e.target.value)}
-                placeholder="Détails supplémentaires..."
-                className="w-full rounded-lg border border-slate-300 p-3 text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-blue-600 p-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-300 transition-all"
-            >
-              {loading ? "Soumission en cours..." : "Soumettre la demande"}
-            </button>
-            
-          </form>
-        </div>
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-10">
+        <h1 className="text-3xl font-black text-gray-800 italic uppercase">Portail Somepharm</h1>
+        <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-8 py-3 rounded-2xl font-black shadow-lg hover:scale-105 transition">
+          + Nouvelle Demande
+        </button>
       </div>
-    </main>
+
+      <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+        <table className="w-full text-left">
+          <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-black">
+            <tr><th className="p-6">Type</th><th className="p-6">Période</th><th className="p-6">Statut</th></tr>
+          </thead>
+          <tbody className="divide-y">
+            {requests.map((req: any) => (
+              <tr key={req.idRequete} className="hover:bg-blue-50/40 transition">
+                <td className="p-6 font-bold text-gray-700">{req.typeConge}</td>
+                <td className="p-6 text-sm text-gray-500">{req.dateDebut} au {req.dateFin}</td>
+                <td className="p-6">
+                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black ${req.statutCycleVie === 'APPROUVE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {req.statutCycleVie}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <DemandeModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => fetchData(token, user?.role)} 
+        token={token} 
+      />
+    </div>
   );
 }
