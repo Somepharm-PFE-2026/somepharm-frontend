@@ -34,7 +34,7 @@ export default function LoginPage() {
       localStorage.setItem("token", data.token);
 
       // 4. Redirect to the main dashboard
-      router.push("/");
+      router.push("/demandes");
       
     } catch (err: any) {
       setError(err.message);
