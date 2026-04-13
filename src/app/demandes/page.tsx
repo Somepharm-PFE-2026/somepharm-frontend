@@ -69,7 +69,7 @@ export default function DemandesPage() {
         <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border-b-8 border-blue-600">
           <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-4">Solde de Congé Actuel</p>
           <p className="text-7xl font-black text-gray-900 flex items-baseline gap-2">
-            {userSolde} <span className="text-2xl font-bold text-gray-300 italic uppercase">Jours</span>
+            {typeof userSolde === 'number' ? userSolde.toFixed(2) : userSolde} <span className="text-2xl font-bold text-gray-300 italic uppercase">Jours</span>
           </p> 
         </div>
         <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border-b-8 border-purple-500">

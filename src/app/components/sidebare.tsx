@@ -11,8 +11,13 @@ import {
   Settings, 
   LogOut,
   UserCircle,
-  Calendar
-} from "lucide-react"; // Using Lucide for a pro look
+  Calendar,
+  QrCode, // <-- 1. Added the QrCode icon here
+  User,
+  Folder,
+  CheckSquare,
+  ShieldCheck
+} from "lucide-react"; 
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -37,13 +42,21 @@ export default function Sidebar() {
   };
 
   const menuItems = [
-    { name: "Tableau de Bord", path: "/dashboard", icon: LayoutDashboard, roles: ["EMPLOYEE", "MANAGER", "HR_ADMIN"] },
-    { name: "Mes Demandes", path: "/demandes", icon: FileText, roles: ["EMPLOYEE"] },
-    { name: "Validation Manager", path: "/demandes", icon: CheckCircle, roles: ["MANAGER"] },
-    { name: "Planning", path: "/calendrier", icon: Calendar, roles: ["HR_ADMIN", "MANAGER"] },
-    { name: "Gestion RH", path: "/employes", icon: Users, roles: ["HR_ADMIN"] },
-    { name: "Mon Profil", path: "/profil", icon: UserCircle, roles: ["EMPLOYEE", "MANAGER", "HR_ADMIN"] },
-  ];
+      { name: "Tableau de Bord", path: "/dashboard", icon: LayoutDashboard, roles: ["EMPLOYEE", "MANAGER", "HR_ADMIN"] },
+      
+      // 👤 PERSONAL SPACE (Everyone can make their own requests)
+      { name: "Mon Profil", path: "/profil", icon: User, roles: ["EMPLOYEE", "MANAGER", "HR_ADMIN"] },
+      { name: "Mes Demandes", path: "/demandes", icon: FileText, roles: ["EMPLOYEE", "MANAGER", "HR_ADMIN"] },
+      { name: "Documents", path: "/documents", icon: Folder, roles: ["EMPLOYEE", "MANAGER", "HR_ADMIN"] },
+      { name: "Bons de Sortie", path: "/bons-de-sortie", icon: QrCode, roles: ["EMPLOYEE", "MANAGER", "HR_ADMIN"] },
+      
+      // 👔 MANAGER SPACE (Only Managers see this to approve their team)
+      { name: "Validation Équipe", path: "/validation-manager", icon: CheckSquare, roles: ["MANAGER"] },
+      
+      // 👑 HR ADMIN SPACE (Only HR sees these to manage the company)
+      { name: "Validation Finale RH", path: "/validation-rh", icon: ShieldCheck, roles: ["HR_ADMIN"] },
+      { name: "Gestion RH (Annuaire)", path: "/employes", icon: Users, roles: ["MANAGER", "HR_ADMIN"] }
+    ];
 
   return (
     <div className="w-72 h-screen bg-white border-r border-gray-100 flex flex-col p-6 fixed left-0 top-0">
